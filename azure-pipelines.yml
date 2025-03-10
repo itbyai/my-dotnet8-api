@@ -1,0 +1,32 @@
+trigger:
+- main  # 当 main 分支有代码变更时触发部署
+
+pool:
+  vmImage: 'ubuntu-latest'  # 使用 Ubuntu 作为构建环境
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- script: dotnet build --configuration $(buildConfiguration)
+  displayName: 'Build .NET 8 project'
+
+- script: dotnet publish -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish .NET 8 project'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: $(Build.ArtifactStagingDirectory)
+    artifactName: 'drop'
+
+- task: AzureWebApp@1
+  inputs:
+    azureSubscription: 'itbyai'
+    appName: 'MyApiFeng'
+    package: $(Build.ArtifactStagingDirectory)
